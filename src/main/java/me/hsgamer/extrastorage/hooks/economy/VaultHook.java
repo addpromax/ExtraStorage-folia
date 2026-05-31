@@ -1,29 +1,23 @@
 package me.hsgamer.extrastorage.hooks.economy;
 
-import me.hsgamer.extrastorage.api.item.Worth;
-import me.hsgamer.extrastorage.data.log.Log;
-import me.hsgamer.extrastorage.util.Digital;
-import me.hsgamer.extrastorage.util.ItemUtil;
-import net.milkbowl.vault.economy.Economy;
-import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
-import java.util.function.Consumer;
+import java.math.BigDecimal;
 
-public final class VaultHook
-        implements EconomyProvider {
+public final class VaultHook extends WorthEconomyHook {
 
     private boolean setup = false;
-    private Economy econ;
+    private VaultSession vaultSession;
+    private VaultSession vault2Session;
 
     public VaultHook() {
         if (this.isHooked()) {
             instance.getLogger().info("Using Vault as economy provider.");
-            instance.getMetrics().addCustomChart(new SimplePie("economy_provider", () -> "Vault"));
-        } else instance.getLogger().severe("Could not find dependency: Vault. Please install it then try again!");
+        } else {
+            instance.getLogger().severe("Could not find dependency: Vault. Please install it then try again!");
+        }
     }
 
     @Override
@@ -32,57 +26,49 @@ public final class VaultHook
             return false;
         }
         if (!setup) {
-            RegisteredServiceProvider<Economy> rsp = Bukkit.getServer().getServicesManager().getRegistration(Economy.class);
-            econ = (rsp != null) ? rsp.getProvider() : null;
+            {
+                RegisteredServiceProvider<net.milkbowl.vault.economy.Economy> rsp = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+                net.milkbowl.vault.economy.Economy econ = (rsp != null) ? rsp.getProvider() : null;
+                if (econ != null) {
+                    vaultSession = (player, price) -> econ.depositPlayer(player, price).transactionSuccess();
+                }
+            }
+
+            {
+                try {
+                    Class.forName("net.milkbowl.vault2.economy.Economy");
+                    RegisteredServiceProvider<net.milkbowl.vault2.economy.Economy> rsp = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault2.economy.Economy.class);
+                    net.milkbowl.vault2.economy.Economy econ = (rsp != null) ? rsp.getProvider() : null;
+                    if (econ != null) {
+                        if (econ.hasMultiCurrencySupport()) {
+                            String currency = instance.getSetting().getCurrency();
+                            if (econ.hasCurrency(currency)) {
+                                vault2Session = (player, price) -> econ.deposit(instance.getName(), player.getUniqueId(), player.getWorld().getName(), BigDecimal.valueOf(price)).transactionSuccess();
+                            } else {
+                                instance.getLogger().warning("The currency '" + currency + "' is not supported! VaultUnlocked hook ignored!");
+                            }
+                        } else {
+                            vault2Session = (player, price) -> econ.deposit(instance.getName(), player.getUniqueId(), BigDecimal.valueOf(price)).transactionSuccess();
+                        }
+                    }
+                } catch (Exception e) {
+                    vault2Session = null;
+                }
+            }
+
             setup = true;
         }
-        return econ != null;
+        return vaultSession != null || vault2Session != null;
     }
 
     @Override
-    public int getAmount(ItemStack item) {
-        if (!this.isHooked()) return 0;
-        String key = ItemUtil.toMaterialKey(item);
-
-        Worth worth = instance.getWorthManager().getWorth(key);
-        if (worth == null) return 0;
-
-        return worth.getQuantity();
+    protected boolean deposit(Player player, double price) {
+        VaultSession vaultSession = this.vault2Session != null ? vault2Session : this.vaultSession;
+        assert vaultSession != null;
+        return vaultSession.deposit(player, price);
     }
 
-    @Override
-    public String getPrice(Player player, ItemStack item, int amount) {
-        if (!this.isHooked()) return null;
-        String key = ItemUtil.toMaterialKey(item);
-
-        Worth worth = instance.getWorthManager().getWorth(key);
-        if (worth == null) return null;
-
-        return Digital.formatDouble("###,###.##", (worth.getPrice() / worth.getQuantity() * amount));
+    private interface VaultSession {
+        boolean deposit(Player player, double price);
     }
-
-    @Override
-    public void sellItem(Player player, ItemStack item, int amount, Consumer<Result> result) {
-        if (!this.isHooked()) {
-            result.accept(new Result(-1, -1, false));
-            return;
-        }
-        String key = ItemUtil.toMaterialKey(item);
-
-        Worth worth = instance.getWorthManager().getWorth(key);
-        if (worth == null) {
-            result.accept(new Result(-1, -1, false));
-            return;
-        }
-
-        int quantity = worth.getQuantity();
-        double price = (worth.getPrice() / quantity * amount);
-
-        if (instance.getSetting().isLogSales()) {
-            instance.getLog().log(player, null, Log.Action.SELL, key, amount, price);
-        }
-
-        result.accept(new Result(amount, price, econ.depositPlayer(player, price).transactionSuccess()));
-    }
-
 }

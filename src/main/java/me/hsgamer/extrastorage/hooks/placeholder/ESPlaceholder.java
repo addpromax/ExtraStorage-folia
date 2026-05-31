@@ -4,6 +4,7 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.hsgamer.extrastorage.ExtraStorage;
 import me.hsgamer.extrastorage.api.item.Item;
 import me.hsgamer.extrastorage.api.storage.Storage;
+import me.hsgamer.extrastorage.configs.Message;
 import me.hsgamer.extrastorage.util.Digital;
 import org.bukkit.OfflinePlayer;
 
@@ -25,7 +26,7 @@ public final class ESPlaceholder
 
     @Override
     public String getAuthor() {
-        return "HyronicTeam";
+        return String.join(", ", instance.getDescription().getAuthors());
     }
 
     @Override
@@ -40,8 +41,6 @@ public final class ESPlaceholder
 
     @Override
     public String onRequest(OfflinePlayer player, String args) {
-        if (!player.isOnline()) return null;
-
         String argsLowerCase = args.toLowerCase();
 
         Storage storage = instance.getUserManager().getUser(player).getStorage();
@@ -67,6 +66,10 @@ public final class ESPlaceholder
                 return (storage.getSpaceAsPercent(false) == -1) ? "-1" : Double.toString(storage.getSpaceAsPercent(false));
             case "free_percent_formatted":
                 return (storage.getSpaceAsPercent(false) == -1) ? "-1" : (storage.getSpaceAsPercent(false) + "%");
+            case "status":
+                return Boolean.toString(storage.getStatus());
+            case "status_formatted":
+                return Message.getMessage("STATUS." + (storage.getStatus() ? "enabled" : "disabled"));
         }
 
         if (argsLowerCase.startsWith("quantity")) {
@@ -75,7 +78,6 @@ public final class ESPlaceholder
             if (isFormatted) key = key.substring(key.indexOf('_') + 1);
 
             Optional<Item> item = storage.getItem(key);
-            if (!item.isPresent()) item = storage.getItem(key);
             if (!item.isPresent()) return "-1";
 
             if (isFormatted) return Digital.formatThousands(Math.min(item.get().getQuantity(), Integer.MAX_VALUE));

@@ -6,7 +6,7 @@
 	
 	<groupId>me.hsgamer</groupId>
 	<artifactId>ExtraStorage</artifactId>
-	<version>3.9.0</version>
+	<version>3.12.1</version>
 	<packaging>jar</packaging>
 
 	<name>ExtraStorage</name>
@@ -15,35 +15,36 @@
         <java.version>1.8</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<core.version>4.7.6</core.version>
-		<topper.version>4.13.1</topper.version>
-		<minelib.version>1.2.5</minelib.version>
+		<core.version>4.9.0</core.version>
+		<topper.version>4.19.1</topper.version>
+		<minelib.version>1.3.0</minelib.version>
 		<spigot.version>1.20-R0.1-SNAPSHOT</spigot.version>
-		<authlib.version>5.0.47</authlib.version>
-		<bstats.version>3.0.2</bstats.version>
-		<headdatabase.version>1.3.1</headdatabase.version>
-		<vault.version>1.7.1</vault.version>
-		<shopgui.version>3.0.0</shopgui.version>
-		<economyshopgui.version>1.7.0</economyshopgui.version>
-		<playerpoints.version>3.2.6</playerpoints.version>
+		<bstats.version>3.2.1</bstats.version>
+		<faststats.version>0.22.0</faststats.version>
+		<vault.version>2.19</vault.version>
+		<shopgui.version>3.2.0</shopgui.version>
+		<economyshopgui.version>1.10.0</economyshopgui.version>
+		<playerpoints.version>3.3.3</playerpoints.version>
 		<tokenmanager.version>3.2.4</tokenmanager.version>
 		<ultraeconomy.version>1.1.2</ultraeconomy.version>
-		<coinsengine.version>2.4.1</coinsengine.version>
-		<placeholderapi.version>2.11.5</placeholderapi.version>
-		<wildstacker.version>2025.2</wildstacker.version>
+		<excellenteconomy.version>2.8.0</excellenteconomy.version>
+		<placeholderapi.version>2.12.2</placeholderapi.version>
+		<wildstacker.version>2026.1</wildstacker.version>
 		<ultimatestacker.version>1.0.0-20240329.173606-35</ultimatestacker.version>
-		<rosestacker.version>1.5.20</rosestacker.version>
-		<uniitem.version>2.4.0</uniitem.version>
-		<craftitem.version>1.2.0</craftitem.version>
+		<rosestacker.version>1.5.39</rosestacker.version>
+		<uniitem.version>2.7.0</uniitem.version>
+		<craftitem.version>1.5.0</craftitem.version>
+		<craftux.version>1.6.3</craftux.version>
+		<maptemplate.version>1.0.2</maptemplate.version>
 	</properties>
-	
+
 	<build>
 		<finalName>${project.name}</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.14.1</version>
+				<version>3.15.0</version>
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
@@ -52,7 +53,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.6.1</version>
+				<version>3.6.2</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -66,6 +67,10 @@
 									<shadedPattern>me.hsgamer.extrastorage.lib.bstats</shadedPattern>
 								</relocation>
 								<relocation>
+									<pattern>io.github.projectunified.faststats</pattern>
+									<shadedPattern>me.hsgamer.extrastorage.lib.faststats</shadedPattern>
+								</relocation>
+								<relocation>
 									<pattern>io.github.projectunified.uniitem</pattern>
 									<shadedPattern>me.hsgamer.extrastorage.lib.uniitem</shadedPattern>
 								</relocation>
@@ -76,6 +81,14 @@
 								<relocation>
 									<pattern>io.github.projectunified.craftitem</pattern>
 									<shadedPattern>me.hsgamer.extrastorage.lib.craftitem</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.github.projectunified.craftux</pattern>
+									<shadedPattern>me.hsgamer.extrastorage.lib.craftux</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>io.github.projectunified.maptemplate</pattern>
+									<shadedPattern>me.hsgamer.extrastorage.lib.maptemplate</shadedPattern>
 								</relocation>
 								<relocation>
 									<pattern>me.hsgamer.hscore</pattern>
@@ -106,15 +119,19 @@
 			</resource>
 		</resources>
 	</build>
-	
+
 	<repositories>
+		<repository>
+			<id>central</id>
+			<url>https://repo.maven.apache.org/maven2</url>
+		</repository>
 		<repository>
 			<id>spigotmc-repo</id>
 			<url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
 		</repository>
 		<repository>
-			<id>jitpack.io</id>
-			<url>https://jitpack.io</url>
+			<id>codemc-creatorfromhell</id>
+			<url>https://repo.codemc.io/repository/creatorfromhell/</url>
 		</repository>
 		<repository>
 			<id>Artillex-Studios</id>
@@ -144,8 +161,24 @@
 			<id>nightexpress-releases</id>
 			<url>https://repo.nightexpressdev.com/releases</url>
 		</repository>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
 	</repositories>
-	
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>io.github.projectunified</groupId>
+				<artifactId>faststats-bom</artifactId>
+				<version>0.3.1</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.spigotmc</groupId>
@@ -153,6 +186,7 @@
 			<version>${spigot.version}</version>
 			<scope>provided</scope>
 		</dependency>
+
 		<dependency>
 			<groupId>org.bstats</groupId>
 			<artifactId>bstats-bukkit</artifactId>
@@ -160,28 +194,27 @@
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.arcaniax</groupId>
-			<artifactId>HeadDatabase-API</artifactId>
-			<version>${headdatabase.version}</version>
-			<scope>provided</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>*</groupId>
-					<artifactId>*</artifactId>
-				</exclusion>
-			</exclusions>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>faststats-core</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.github.MilkBowl</groupId>
-			<artifactId>VaultAPI</artifactId>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>faststats-gson</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>faststats-net</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>faststats-bukkit</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>net.milkbowl.vault</groupId>
+			<artifactId>VaultUnlockedAPI</artifactId>
 			<version>${vault.version}</version>
 			<scope>provided</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>*</groupId>
-					<artifactId>*</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.github.brcdev-minecraft</groupId>
@@ -226,9 +259,9 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>su.nightexpress.coinsengine</groupId>
-			<artifactId>CoinsEngine</artifactId>
-			<version>${coinsengine.version}</version>
+			<groupId>su.nightexpress.excellenteconomy</groupId>
+			<artifactId>ExcellentEconomy</artifactId>
+			<version>${excellenteconomy.version}</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -305,6 +338,16 @@
 			<artifactId>hscore-license-template</artifactId>
 			<version>${core.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>me.hsgamer</groupId>
+			<artifactId>hscore-bukkit-action-builder</artifactId>
+			<version>${core.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>me.hsgamer</groupId>
+			<artifactId>hscore-bukkit-variable</artifactId>
+			<version>${core.version}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>me.hsgamer</groupId>
@@ -340,6 +383,11 @@
 
 		<dependency>
 			<groupId>io.github.projectunified</groupId>
+			<artifactId>craftitem-modifier</artifactId>
+			<version>${craftitem.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.projectunified</groupId>
 			<artifactId>craftitem-spigot-modifier</artifactId>
 			<version>${craftitem.version}</version>
 		</dependency>
@@ -358,6 +406,29 @@
 			<artifactId>craftitem-spigot-skull</artifactId>
 			<version>${craftitem.version}</version>
 		</dependency>
+
+		<dependency>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>craftux-spigot</artifactId>
+			<version>${craftux.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>craftux-mask</artifactId>
+			<version>${craftux.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>craftux-simple</artifactId>
+			<version>${craftux.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.projectunified</groupId>
+			<artifactId>map-template</artifactId>
+			<version>${maptemplate.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>com.artillexstudios</groupId>
 			<artifactId>AxSellwands</artifactId>

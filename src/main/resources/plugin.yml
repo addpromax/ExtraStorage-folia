@@ -15,7 +15,7 @@ softdepend:
   - PlayerPoints
   - TokenManager
   - UltraEconomy
-  - CoinsEngine
+  - ExcellentEconomy
   - WildStacker
   - UltimateStacker
   - RoseStacker

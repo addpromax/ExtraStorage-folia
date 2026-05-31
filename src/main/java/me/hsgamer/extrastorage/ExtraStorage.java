@@ -1,6 +1,12 @@
 package me.hsgamer.extrastorage;
 
+import io.github.projectunified.craftux.spigot.SpigotInventoryUI;
+import io.github.projectunified.craftux.spigot.SpigotInventoryUIListener;
+import io.github.projectunified.faststats.bukkit.BukkitPlatform;
+import io.github.projectunified.faststats.gson.GsonSerializer;
+import io.github.projectunified.faststats.net.NetSubmitter;
 import io.github.projectunified.minelib.scheduler.async.AsyncScheduler;
+import me.hsgamer.extrastorage.action.ActionManager;
 import me.hsgamer.extrastorage.commands.AdminCommands;
 import me.hsgamer.extrastorage.commands.PlayerCommands;
 import me.hsgamer.extrastorage.commands.handler.CommandHandler;
@@ -10,10 +16,8 @@ import me.hsgamer.extrastorage.configs.types.BukkitConfigChecker;
 import me.hsgamer.extrastorage.data.log.Log;
 import me.hsgamer.extrastorage.data.user.UserManager;
 import me.hsgamer.extrastorage.data.worth.WorthManager;
-import me.hsgamer.extrastorage.gui.*;
-import me.hsgamer.extrastorage.gui.abstraction.GuiCreator;
+import me.hsgamer.extrastorage.gui.config.GuiConfig;
 import me.hsgamer.extrastorage.hooks.placeholder.ESPlaceholder;
-import me.hsgamer.extrastorage.listeners.InventoryListener;
 import me.hsgamer.extrastorage.listeners.ItemListener;
 import me.hsgamer.extrastorage.listeners.PickupListener;
 import me.hsgamer.extrastorage.listeners.PlayerListener;
@@ -21,8 +25,6 @@ import me.hsgamer.hscore.license.common.LicenseStatus;
 import me.hsgamer.hscore.license.polymart.PolymartLicenseChecker;
 import me.hsgamer.hscore.license.spigotmc.SpigotLicenseChecker;
 import me.hsgamer.hscore.license.template.LicenseTemplate;
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.SimplePie;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -36,8 +38,6 @@ public final class ExtraStorage extends JavaPlugin {
 
     private boolean firstLoad;
 
-    private Metrics metrics;
-
     private Setting setting;
     private Message message;
 
@@ -47,6 +47,17 @@ public final class ExtraStorage extends JavaPlugin {
     private Log log;
 
     private ESPlaceholder placeholder;
+
+    private GuiConfig filterGuiConfig;
+    private GuiConfig partnerGuiConfig;
+    private GuiConfig sellGuiConfig;
+    private GuiConfig storageGuiConfig;
+    private GuiConfig whitelistGuiConfig;
+
+    private ActionManager actionManager;
+
+    private org.bstats.bukkit.Metrics bstatsMetrics;
+    private io.github.projectunified.faststats.core.Metrics fastStatsMetrics;
 
     public static ExtraStorage getInstance() {
         return ExtraStorage.instance;
@@ -66,12 +77,19 @@ public final class ExtraStorage extends JavaPlugin {
             getLogger().warning("Once the player data was loaded, you should use '/esadmin whitelist' command to apply changes to your players' filter (do not configure it manually).");
         }
 
-        this.metrics = new Metrics(this, 18779);
+        bstatsMetrics = new org.bstats.bukkit.Metrics(this, 18779);
+        fastStatsMetrics = io.github.projectunified.faststats.core.Metrics.builder()
+                .platform(new BukkitPlatform(this))
+                .serializer(new GsonSerializer())
+                .submitter(new NetSubmitter("22928e7ae69f2235c34393792e676a7f"))
+                .build();
+        fastStatsMetrics.start();
+
+        this.actionManager = new ActionManager(this);
 
         this.loadConfigs();
         this.userManager = new UserManager(this);
         this.loadGuiFile();
-        this.addExtraMetrics();
 
         this.log = new Log(this);
 
@@ -92,11 +110,17 @@ public final class ExtraStorage extends JavaPlugin {
         if ((placeholder != null) && placeholder.isRegistered()) placeholder.unregister();
         Bukkit.getServer().getOnlinePlayers().forEach(player -> {
             InventoryHolder holder = player.getOpenInventory().getTopInventory().getHolder();
-            if (holder instanceof GuiCreator) player.closeInventory();
+            if (holder instanceof SpigotInventoryUI) player.closeInventory();
         });
         if (userManager != null) {
             userManager.stop();
             userManager.save();
+        }
+        if (bstatsMetrics != null) {
+            bstatsMetrics.shutdown();
+        }
+        if (fastStatsMetrics != null) {
+            fastStatsMetrics.shutdown();
         }
     }
 
@@ -118,12 +142,12 @@ public final class ExtraStorage extends JavaPlugin {
         new BukkitConfigChecker(setting, message).startTracking();
     }
 
-    private void loadGuiFile() {
-        new FilterGui(null, -1);
-        new PartnerGui(null, -1);
-        new SellGui(null, -1);
-        new StorageGui(null, -1);
-        new WhitelistGui(null, -1);
+    public void loadGuiFile() {
+        this.filterGuiConfig = new GuiConfig("gui/filter");
+        this.partnerGuiConfig = new GuiConfig("gui/partner");
+        this.sellGuiConfig = new GuiConfig("gui/sell");
+        this.storageGuiConfig = new GuiConfig("gui/storage");
+        this.whitelistGuiConfig = new GuiConfig("gui/whitelist");
     }
 
     private void registerCommands() {
@@ -134,21 +158,9 @@ public final class ExtraStorage extends JavaPlugin {
 
     private void registerEvents() {
         new PlayerListener(this);
-        new InventoryListener(this);
+        new SpigotInventoryUIListener(this).register();
         new ItemListener(this);
         new PickupListener(this);
-    }
-
-    private void addExtraMetrics() {
-        if (instance.getSetting().getDBType().equalsIgnoreCase("mysql")) {
-            metrics.addCustomChart(new SimplePie("database", () -> "MySQL"));
-        } else {
-            metrics.addCustomChart(new SimplePie("database", () -> "SQLite"));
-        }
-    }
-
-    public Metrics getMetrics() {
-        return this.metrics;
     }
 
     public Setting getSetting() {
@@ -169,5 +181,29 @@ public final class ExtraStorage extends JavaPlugin {
 
     public Log getLog() {
         return this.log;
+    }
+
+    public GuiConfig getFilterGuiConfig() {
+        return filterGuiConfig;
+    }
+
+    public GuiConfig getPartnerGuiConfig() {
+        return partnerGuiConfig;
+    }
+
+    public GuiConfig getSellGuiConfig() {
+        return sellGuiConfig;
+    }
+
+    public GuiConfig getStorageGuiConfig() {
+        return storageGuiConfig;
+    }
+
+    public GuiConfig getWhitelistGuiConfig() {
+        return whitelistGuiConfig;
+    }
+
+    public ActionManager getActionManager() {
+        return actionManager;
     }
 }
